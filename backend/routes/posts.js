@@ -69,6 +69,7 @@ router.get('/', async (req, res) => {
       images: post.images || [],
       likes: post.like_count,
       comments: post.comments.length,
+      commentsList: post.comments,
       shares: post.share_count,
     }));
 
@@ -151,6 +152,7 @@ router.post('/', async (req, res) => {
       images: post.images,
       likes: 0,
       comments: 0,
+      commentsList: [],
       shares: 0,
     };
 

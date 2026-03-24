@@ -138,6 +138,7 @@ function App() {
       images: postData.images || [],
       likes: 0,
       comments: 0,
+      commentsList: [],
       shares: 0,
     };
 

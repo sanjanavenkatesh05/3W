@@ -14,7 +14,7 @@
  * - post: Object containing all post data (see samplePosts.js for shape)
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -23,11 +23,16 @@ import {
   Typography,
   Button,
   IconButton,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
 import FavoriteBorderIcon from '@mui/icons-material/FavoriteBorder';
+import FavoriteIcon from '@mui/icons-material/Favorite';
 import ChatBubbleOutlineIcon from '@mui/icons-material/ChatBubbleOutline';
 import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import SendIcon from '@mui/icons-material/Send';
 import ImageGrid from './ImageGrid';
+import api from '../services/api';
 
 /**
  * renderContentWithHashtags
@@ -64,6 +69,106 @@ function renderContentWithHashtags(content, hashtags) {
 }
 
 function PostCard({ post }) {
+  /* -- State for Engagement --
+   * Initialize with props, then update locally for immediate feedback (optimistic UI)
+   */
+  const [likes, setLikes] = useState(post.likes || 0);
+  const [isLiked, setIsLiked] = useState(false); // Tracks if current user liked it in this session
+  const [commentsCount, setCommentsCount] = useState(post.comments || 0);
+  const [commentsList, setCommentsList] = useState(post.commentsList || []);
+  const [shares, setShares] = useState(post.shares || 0);
+
+  /* -- State for Comment Input -- */
+  const [showCommentBox, setShowCommentBox] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  /**
+   * handleLike
+   * Optimistically increments the like count and calls the backend.
+   */
+  const handleLike = async () => {
+    if (isLiked) return; // Prevent multiple likes in one session for simplicity
+
+    setLikes((prev) => prev + 1);
+    setIsLiked(true);
+
+    try {
+      /* id might be id or _id depending on sample vs real data */
+      const postId = post._id || post.id;
+      if (typeof postId === 'string') {
+        await api.likePost(postId);
+      }
+    } catch (error) {
+      console.error('Failed to like post:', error);
+      // Revert optimism on failure
+      setLikes((prev) => prev - 1);
+      setIsLiked(false);
+    }
+  };
+
+  /**
+   * handleShare
+   * Optimistically increments the share count and calls the backend.
+   */
+  const handleShare = async () => {
+    setShares((prev) => prev + 1);
+
+    try {
+      const postId = post._id || post.id;
+      if (typeof postId === 'string') {
+        await api.sharePost(postId);
+      }
+    } catch (error) {
+      console.error('Failed to share post:', error);
+      setShares((prev) => prev - 1);
+    }
+  };
+
+  /**
+   * handleAddComment
+   * Submits a new comment to the backend and updates the count.
+   */
+  const handleAddComment = async () => {
+    if (!commentText.trim()) return;
+
+    setIsSubmitting(true);
+    const previousCount = commentsCount;
+    const previousList = [...commentsList];
+    
+    // Optimistic update
+    setCommentsCount((prev) => prev + 1);
+    setCommentsList((prev) => [...prev, {
+      _id: 'temp_' + Date.now(),
+      username: '@current_user',
+      text: commentText.trim(),
+      created_at: new Date().toISOString()
+    }]);
+    setCommentText('');
+
+    try {
+      const postId = post._id || post.id;
+      if (typeof postId === 'string') {
+        const updatedPost = await api.addComment(postId, {
+          text: commentText.trim(),
+          username: '@current_user' // Hardcoded for now without auth
+        });
+        
+        // The backend returns the raw mongoose document for this route
+        if (updatedPost && updatedPost.comments) {
+          setCommentsList(updatedPost.comments);
+          setCommentsCount(updatedPost.comments.length);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add comment:', error);
+      setCommentsCount(previousCount); // Revert on failure
+      setCommentsList(previousList);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <Card sx={{ mx: 2, mb: 1.5 }}>
       <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
@@ -155,14 +260,6 @@ function PostCard({ post }) {
           {renderContentWithHashtags(post.content, post.hashtags)}
         </Typography>
 
-        {/* ---- Image Grid Section ----
-         * Renders 0-4 images using the ImageGrid component.
-         * Only renders if the post has images attached.
-         */}
-        {post.images && post.images.length > 0 && (
-          <ImageGrid images={post.images} />
-        )}
-
         {/* ---- Action Bar Section ---- */}
         <Box
           sx={{
@@ -176,34 +273,89 @@ function PostCard({ post }) {
         >
           {/* Like action */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
-              <FavoriteBorderIcon sx={{ fontSize: 20 }} />
+            <IconButton size="small" onClick={handleLike} sx={{ color: isLiked ? 'error.main' : 'text.secondary' }}>
+              {isLiked ? <FavoriteIcon sx={{ fontSize: 20 }} /> : <FavoriteBorderIcon sx={{ fontSize: 20 }} />}
             </IconButton>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {post.likes}
+              {likes}
             </Typography>
           </Box>
 
           {/* Comment action */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
+            <IconButton size="small" onClick={() => setShowCommentBox(!showCommentBox)} sx={{ color: showCommentBox ? 'primary.main' : 'text.secondary' }}>
               <ChatBubbleOutlineIcon sx={{ fontSize: 20 }} />
             </IconButton>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {post.comments}
+              {commentsCount}
             </Typography>
           </Box>
 
           {/* Share action */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
+            <IconButton size="small" onClick={handleShare} sx={{ color: 'text.secondary' }}>
               <ShareOutlinedIcon sx={{ fontSize: 20 }} />
             </IconButton>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-              {post.shares}
+              {shares}
             </Typography>
           </Box>
         </Box>
+
+        {/* ---- Comment Input Box (Toggleable) ---- */}
+        {showCommentBox && (
+          <Box sx={{ mt: 2 }}>
+            <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+              <TextField
+                size="small"
+                fullWidth
+                placeholder="Write a comment..."
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                disabled={isSubmitting}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') handleAddComment();
+                }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    borderRadius: 3,
+                    fontSize: '0.85rem',
+                  }
+                }}
+              />
+              <IconButton 
+                color="primary" 
+                onClick={handleAddComment}
+                disabled={!commentText.trim() || isSubmitting}
+                sx={{ bgcolor: 'primary.light', borderRadius: 2, '&:hover': { bgcolor: 'primary.main', color: '#fff' } }}
+              >
+                <SendIcon sx={{ fontSize: 18 }} />
+              </IconButton>
+            </Box>
+
+            {/* ---- Comments List ---- */}
+            {commentsList.length > 0 && (
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                {/* Shallow copy before reverse to avoid mutating state array */}
+                {[...commentsList].reverse().map((c) => (
+                  <Box key={c._id} sx={{ display: 'flex', gap: 1 }}>
+                    <Avatar sx={{ width: 28, height: 28, fontSize: '0.7rem', bgcolor: 'secondary.main' }}>
+                      {c.username ? c.username.charAt(0).toUpperCase() : 'U'}
+                    </Avatar>
+                    <Box sx={{ bgcolor: 'background.default', p: 1.5, borderRadius: 2, flex: 1 }}>
+                      <Typography variant="subtitle2" sx={{ fontWeight: 600, fontSize: '0.8rem', mb: 0.5 }}>
+                        {c.username}
+                      </Typography>
+                      <Typography variant="body2" sx={{ fontSize: '0.85rem', color: 'text.primary' }}>
+                        {c.text}
+                      </Typography>
+                    </Box>
+                  </Box>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
       </CardContent>
     </Card>
   );
