@@ -193,7 +193,7 @@ function App() {
         }}
       >
         {/* -- Fixed Top Bar -- */}
-        <TopBar />
+        <TopBar user={user} onLogout={handleLogout} />
 
         {/* -- Scrollable Content Area --
          * Padded top and bottom to account for fixed TopBar (56px)

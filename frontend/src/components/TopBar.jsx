@@ -11,7 +11,7 @@
  * This is a fixed-position bar that stays at the top of the viewport.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   AppBar,
   Toolbar,
@@ -21,11 +21,29 @@ import {
   IconButton,
   Badge,
   Chip,
+  Menu,
+  MenuItem,
 } from '@mui/material';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import StarRoundedIcon from '@mui/icons-material/StarRounded';
 
-function TopBar() {
+function TopBar({ user, onLogout }) {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleMenuLogout = () => {
+    handleMenuClose();
+    if (onLogout) onLogout();
+  };
+
   return (
     <AppBar
       position="fixed"
@@ -96,17 +114,40 @@ function TopBar() {
           </IconButton>
 
           {/* User avatar: initials with a colored background */}
-          <Avatar
-            sx={{
-              width: 32,
-              height: 32,
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              bgcolor: '#1976d2',
+          <IconButton onClick={handleMenuClick} size="small" sx={{ p: 0, ml: 1 }}>
+            <Avatar
+              sx={{
+                width: 32,
+                height: 32,
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                bgcolor: '#1976d2',
+              }}
+            >
+              {user?.username ? user.username.charAt(0).toUpperCase() : 'U'}
+            </Avatar>
+          </IconButton>
+
+          {/* User Actions Menu */}
+          <Menu
+            anchorEl={anchorEl}
+            open={open}
+            onClose={handleMenuClose}
+            transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+            anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+            PaperProps={{
+              sx: { minWidth: 160, mt: 1.5, borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }
             }}
           >
-            U
-          </Avatar>
+            <MenuItem disabled sx={{ opacity: '1 !important', pb: 1.5, borderBottom: '1px solid #f0f0f0' }}>
+              <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                @{user?.username || 'Guest'}
+              </Typography>
+            </MenuItem>
+            <MenuItem onClick={handleMenuLogout} sx={{ color: 'error.main', mt: 0.5 }}>
+              <Typography variant="body2" sx={{ fontWeight: 600 }}>Log out</Typography>
+            </MenuItem>
+          </Menu>
         </Box>
       </Toolbar>
     </AppBar>
