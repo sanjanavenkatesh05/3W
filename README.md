@@ -2,26 +2,18 @@
 
 A modern, mobile-first social media application offering real-time engagement, post creation, and secure user authentication. Built with scalability and beautiful UI design in mind.
 
-## 📸 Screenshots
 
-| The Global Feed | Viewing Comments |
-| :---: | :---: |
-| <img src="docs/feed.webp" alt="Feed View" width="300" /> | <img src="docs/comments.webp" alt="Comments View" width="300" /> |
-
-<p align="center">
-  <img src="docs/layout.webp" alt="App Layout" width="300" />
-</p>
 
 ---
 
-## 🚀 Live Deployment
+##  Live Deployment
 
 - **Frontend:** [Insert Vercel Frontend Link Here]
 - **Backend:** [https://threew-ioir.onrender.com](https://threew-ioir.onrender.com)
 
 ---
 
-## 🛠️ Tech Stack
+##  Tech Stack
 
 **Frontend Framework:** 
 - React.js (Bootstrapped with Vite)
@@ -39,7 +31,7 @@ A modern, mobile-first social media application offering real-time engagement, p
 
 ---
 
-## ✨ Features
+##  Features
 
 ### Current Features
 - **User Authentication:** Secure Sign Up and Log In system. Automatically generates unique `@usernames` for new users.
