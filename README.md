@@ -8,7 +8,7 @@ A modern, mobile-first social media application offering real-time engagement, p
 
 ##  Live Deployment
 
-- **Frontend:** [Insert Vercel Frontend Link Here]
+- **Frontend:** [[Insert Vercel Frontend Link Here]](https://3-w-murex.vercel.app/)
 - **Backend:** [https://threew-ioir.onrender.com](https://threew-ioir.onrender.com)
 
 ---
