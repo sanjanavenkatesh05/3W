@@ -8,17 +8,19 @@
  * 2. SearchBar
  * 3. CreatePost (with image upload and text posting)
  * 4. FilterTabs (scrollable feed filters)
- * 5. PostCard list (feed of posts from sample data + user-created posts)
+ * 5. PostCard list (feed of posts from API or local sample data)
  * 6. FloatingActionButton (fixed bottom-right)
  * 7. BottomNav (fixed bottom navigation)
  *
- * State management:
- * - Posts array is managed here so new posts from CreatePost appear at the
- *   top of the feed immediately.
+ * Data flow:
+ * - On mount, attempts to fetch posts from the backend API (Render).
+ * - If the API is not configured (VITE_API_URL is empty), falls back
+ *   to local sample data so the UI still works during development.
+ * - New posts are sent to the API if available, then prepended locally.
  */
 
-import React, { useState } from 'react';
-import { Box } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, CircularProgress } from '@mui/material';
 import TopBar from './components/TopBar';
 import SearchBar from './components/SearchBar';
 import CreatePost from './components/CreatePost';
@@ -27,24 +29,77 @@ import PostCard from './components/PostCard';
 import FloatingActionButton from './components/FloatingActionButton';
 import BottomNav from './components/BottomNav';
 import samplePosts from './data/samplePosts';
+import api from './services/api';
 
 function App() {
   /* -- Posts State --
-   * Initialize with sample data. New posts are prepended to this array
-   * when the user submits a post via CreatePost.
+   * Stores the array of post objects currently displayed in the feed.
+   * Initialized empty; populated by API response or sample data on mount.
    */
-  const [posts, setPosts] = useState(samplePosts);
+  const [posts, setPosts] = useState([]);
+
+  /* Loading state: true while fetching posts from the API */
+  const [loading, setLoading] = useState(true);
+
+  /**
+   * useEffect -- Fetch Posts on Mount
+   * Attempts to load posts from the backend API.
+   * If the API call returns null (URL not configured) or fails,
+   * falls back to local sample data.
+   */
+  useEffect(() => {
+    async function fetchPosts() {
+      try {
+        const data = await api.getPosts();
+
+        if (data && Array.isArray(data)) {
+          /* API returned valid data: use it */
+          setPosts(data);
+        } else {
+          /* API not configured (returned null): use sample data */
+          setPosts(samplePosts);
+        }
+      } catch (error) {
+        console.error('Failed to fetch posts from API:', error);
+        /* Fallback to sample data on any error */
+        setPosts(samplePosts);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPosts();
+  }, []);
 
   /**
    * handleCreatePost
    * Called by CreatePost component when the user submits a new post.
-   * Creates a new post object with user-provided content and images,
-   * then prepends it to the feed so it appears at the top.
+   * 1. Attempts to send the post to the backend API.
+   * 2. If API returns the created post, uses that (includes server-generated _id).
+   * 3. If API is unavailable, creates a local-only post object.
+   * 4. Prepends the new post to the feed so it appears at the top.
    *
    * @param {Object} postData - { content: string, images: string[] }
    */
-  const handleCreatePost = (postData) => {
-    const newPost = {
+  const handleCreatePost = async (postData) => {
+    try {
+      /* Attempt to create the post via API */
+      const apiPost = await api.createPost({
+        content: postData.content,
+        images: postData.images || [],
+      });
+
+      if (apiPost) {
+        /* API succeeded: prepend the server-created post */
+        setPosts((prev) => [apiPost, ...prev]);
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to create post via API:', error);
+    }
+
+    /* Fallback: create a local-only post when API is unavailable */
+    const localPost = {
       id: Date.now(),
       displayName: 'You',
       username: '@current_user',
@@ -68,8 +123,7 @@ function App() {
       shares: 0,
     };
 
-    /* Prepend new post to show it at the top of the feed */
-    setPosts((prev) => [newPost, ...prev]);
+    setPosts((prev) => [localPost, ...prev]);
   };
 
   return (
@@ -101,12 +155,19 @@ function App() {
         <FilterTabs />
 
         {/* -- Post Feed --
-         * Renders each post as a PostCard.
-         * Posts are keyed by their unique id for efficient React reconciliation.
+         * Shows a loading spinner while fetching from API.
+         * Once loaded, renders each post as a PostCard.
+         * Posts are keyed by their unique id (or _id from MongoDB).
          */}
-        {posts.map((post) => (
-          <PostCard key={post.id} post={post} />
-        ))}
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+            <CircularProgress size={32} />
+          </Box>
+        ) : (
+          posts.map((post) => (
+            <PostCard key={post.id || post._id} post={post} />
+          ))
+        )}
       </Box>
 
       {/* -- Fixed UI Elements -- */}
