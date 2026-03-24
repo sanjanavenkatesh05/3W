@@ -38,6 +38,12 @@ const UserSchema = new Schema({
     ],
   },
 
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    select: false, // Don't return password in queries by default
+  },
+
   created_at: {
     type: Date,
     default: Date.now,

@@ -16,6 +16,7 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
+const requireAuth = require('../middleware/auth');
 
 // ---------------------------------------------------------------------------
 // GET /api/posts -- Global Feed
@@ -85,44 +86,24 @@ router.get('/', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * Creates a new post.
+ * Creates a new post. (Protected)
  *
  * Request body:
  *   content   (string, required) - Text content of the post
  *   images    (string[], optional) - Array of image URLs/data URIs (max 4)
- *   author_id (string, required) - MongoDB _id of the author
- *
- * If no author_id is provided, creates a temporary "anonymous" user
- * for development purposes. In production, this should come from auth.
  *
  * Response: The created post in the frontend-expected shape.
  */
-router.post('/', async (req, res) => {
+router.post('/', requireAuth, async (req, res) => {
   try {
-    const { content, images, author_id } = req.body;
+    const { content, images } = req.body;
 
     if (!content || !content.trim()) {
       return res.status(400).json({ message: 'Post content is required' });
     }
 
-    /* Use provided author_id, or fall back to a default for development */
-    let authorId = author_id;
-    if (!authorId) {
-      /* In development without auth, use a placeholder ObjectId.
-       * In production, this should be extracted from the auth token. */
-      const User = require('../models/User');
-      let defaultUser = await User.findOne({ username: 'anonymous' });
-      if (!defaultUser) {
-        defaultUser = await User.create({
-          username: 'anonymous',
-          email: 'anonymous@placeholder.dev',
-        });
-      }
-      authorId = defaultUser._id;
-    }
-
     const post = await Post.create({
-      author_id: authorId,
+      author_id: req.user.id,
       content: content.trim(),
       images: (images || []).slice(0, 4),
     });
@@ -135,7 +116,7 @@ router.post('/', async (req, res) => {
       id: post._id,
       _id: post._id,
       displayName: post.author_id?.username || 'You',
-      username: `@${post.author_id?.username || 'current_user'}`,
+      username: `@${post.author_id?.username || 'user'}`,
       timestamp: new Date(post.created_at).toLocaleString('en-IN', {
         weekday: 'short',
         day: '2-digit',
@@ -146,7 +127,7 @@ router.post('/', async (req, res) => {
         second: '2-digit',
         hour12: true,
       }),
-      avatarColor: '#1976d2',
+      avatarColor: generateAvatarColor(post.author_id?.username || 'user'),
       content: post.content,
       hashtags: post.content.match(/#\w+/g) || [],
       images: post.images,
@@ -168,16 +149,24 @@ router.post('/', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * Increments the like_count of a post by 1.
- * Uses MongoDB's $inc operator for atomic updates.
+ * Increments the like_count of a post by 1 (Protected).
+ * Ensures a user can only like a post once.
+ * Uses MongoDB's $addToSet to prevent duplicate user IDs in liked_by.
  *
  * Response: Updated post object.
  */
-router.patch('/:id/like', async (req, res) => {
+router.patch('/:id/like', requireAuth, async (req, res) => {
   try {
+    const postToLike = await Post.findById(req.params.id);
+    if (!postToLike) return res.status(404).json({ message: 'Post not found' });
+
+    if (postToLike.liked_by.includes(req.user.id)) {
+      return res.status(400).json({ message: 'You have already liked this post' });
+    }
+
     const post = await Post.findByIdAndUpdate(
       req.params.id,
-      { $inc: { like_count: 1 } },
+      { $addToSet: { liked_by: req.user.id }, $inc: { like_count: 1 } },
       { new: true }
     );
 
@@ -226,26 +215,24 @@ router.patch('/:id/share', async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * Pushes a new comment into the post's comments array.
+ * Pushes a new comment into the post's comments array (Protected).
  *
  * Request body:
- *   text     (string, required) - Comment text
- *   user_id  (string, required) - MongoDB _id of the commenter
- *   username (string, required) - Display name of the commenter
+ *   text (string, required) - Comment text
  *
  * Response: Updated post object with the new comment.
  */
-router.post('/:id/comments', async (req, res) => {
+router.post('/:id/comments', requireAuth, async (req, res) => {
   try {
-    const { text, user_id, username } = req.body;
+    const { text } = req.body;
 
     if (!text || !text.trim()) {
       return res.status(400).json({ message: 'Comment text is required' });
     }
 
     const comment = {
-      user_id: user_id || '000000000000000000000000',
-      username: username || 'Anonymous',
+      user_id: req.user.id,
+      username: req.user.username,
       text: text.trim(),
     };
 

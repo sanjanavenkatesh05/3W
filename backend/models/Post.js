@@ -82,6 +82,11 @@ const PostSchema = new Schema({
     default: [],
   },
 
+  liked_by: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  }],
+
   like_count: {
     type: Number,
     default: 0,

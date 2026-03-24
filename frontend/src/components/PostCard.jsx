@@ -68,12 +68,17 @@ function renderContentWithHashtags(content, hashtags) {
   });
 }
 
-function PostCard({ post }) {
+function PostCard({ post, currentUser }) {
   /* -- State for Engagement --
    * Initialize with props, then update locally for immediate feedback (optimistic UI)
    */
   const [likes, setLikes] = useState(post.likes || 0);
-  const [isLiked, setIsLiked] = useState(false); // Tracks if current user liked it in this session
+  
+  // Track if current user liked it based on DB data or current session action
+  const initialIsLiked = post.liked_by?.includes(currentUser?.id) || false;
+  const [isLiked, setIsLiked] = useState(initialIsLiked);
+  const [isLiking, setIsLiking] = useState(false);
+  
   const [commentsCount, setCommentsCount] = useState(post.comments || 0);
   const [commentsList, setCommentsList] = useState(post.commentsList || []);
   const [shares, setShares] = useState(post.shares || 0);
@@ -88,8 +93,9 @@ function PostCard({ post }) {
    * Optimistically increments the like count and calls the backend.
    */
   const handleLike = async () => {
-    if (isLiked) return; // Prevent multiple likes in one session for simplicity
+    if (isLiked || isLiking) return; // Prevent multiple likes in one session or spamming clicks
 
+    setIsLiking(true);
     setLikes((prev) => prev + 1);
     setIsLiked(true);
 
@@ -104,6 +110,8 @@ function PostCard({ post }) {
       // Revert optimism on failure
       setLikes((prev) => prev - 1);
       setIsLiked(false);
+    } finally {
+      setIsLiking(false);
     }
   };
 
@@ -273,7 +281,12 @@ function PostCard({ post }) {
         >
           {/* Like action */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <IconButton size="small" onClick={handleLike} sx={{ color: isLiked ? 'error.main' : 'text.secondary' }}>
+            <IconButton 
+              size="small" 
+              onClick={handleLike} 
+              disabled={isLiked || isLiking}
+              sx={{ color: isLiked ? 'error.main' : 'text.secondary' }}
+            >
               {isLiked ? <FavoriteIcon sx={{ fontSize: 20 }} /> : <FavoriteBorderIcon sx={{ fontSize: 20 }} />}
             </IconButton>
             <Typography variant="body2" sx={{ color: 'text.secondary' }}>

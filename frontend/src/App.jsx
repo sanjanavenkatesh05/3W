@@ -34,6 +34,7 @@ import FilterTabs from './components/FilterTabs';
 import PostCard from './components/PostCard';
 import FloatingActionButton from './components/FloatingActionButton';
 import BottomNav from './components/BottomNav';
+import Login from './components/Login';
 import samplePosts from './data/samplePosts';
 import api from './services/api';
 import createAppTheme from './theme';
@@ -49,6 +50,21 @@ function App() {
     () => createAppTheme(darkMode ? 'dark' : 'light'),
     [darkMode]
   );
+
+  /* -- Auth State -- */
+  const [token, setToken] = useState(localStorage.getItem('token'));
+  const [user, setUser] = useState(() => {
+    const saved = localStorage.getItem('user');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const handleLogin = (newToken, newUser) => {
+    localStorage.setItem('token', newToken);
+    localStorage.setItem('user', JSON.stringify(newUser));
+    api.setToken(newToken);
+    setToken(newToken);
+    setUser(newUser);
+  };
 
   /* -- Posts State --
    * Stores the array of post objects currently displayed in the feed.
@@ -116,11 +132,19 @@ function App() {
       console.error('Failed to create post via API:', error);
     }
 
+    /* Helper to generate consistent avatar color based on username */
+    const hashStr = user ? user.username : 'You';
+    let hash = 0;
+    for (let i = 0; i < hashStr.length; i++) {
+      hash = hashStr.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const color = '#' + ((hash >> 0) & 0xffffff).toString(16).padStart(6, '0');
+
     /* Fallback: create a local-only post when API is unavailable */
     const localPost = {
       id: Date.now(),
-      displayName: 'You',
-      username: '@current_user',
+      displayName: user ? user.username : 'You',
+      username: `@${user ? user.username : 'current_user'}`,
       timestamp: new Date().toLocaleString('en-IN', {
         weekday: 'short',
         day: '2-digit',
@@ -131,7 +155,7 @@ function App() {
         second: '2-digit',
         hour12: true,
       }),
-      avatarColor: '#1976d2',
+      avatarColor: generateAvatarColor(user ? user.username : 'You'),
       content: postData.content,
       /* Extract hashtags from the content for styled rendering */
       hashtags: postData.content.match(/#\w+/g) || [],
@@ -144,6 +168,16 @@ function App() {
 
     setPosts((prev) => [localPost, ...prev]);
   };
+
+  // If unauthenticated, show the Login screen
+  if (!token) {
+    return (
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Login onLogin={handleLogin} />
+      </ThemeProvider>
+    );
+  }
 
   return (
     <ThemeProvider theme={theme}>
@@ -189,7 +223,7 @@ function App() {
             </Box>
           ) : (
             posts.map((post) => (
-              <PostCard key={post.id || post._id} post={post} />
+              <PostCard key={post.id || post._id} post={post} currentUser={user} />
             ))
           )}
         </Box>

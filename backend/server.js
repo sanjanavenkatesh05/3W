@@ -22,6 +22,7 @@ require('dotenv').config();
 
 const postRoutes = require('./routes/posts');
 const userRoutes = require('./routes/users');
+const authRoutes = require('./routes/auth');
 
 /* -- Express Application Setup -- */
 const app = express();
@@ -61,6 +62,9 @@ app.use('/api/posts', postRoutes);
 
 /* Mount user-related routes at /api/users */
 app.use('/api/users', userRoutes);
+
+/* Mount auth-related routes at /api/auth */
+app.use('/api/auth', authRoutes);
 
 /**
  * Health Check Endpoint

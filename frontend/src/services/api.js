@@ -18,8 +18,9 @@
  * Vite injects environment variables at build time via import.meta.env.
  * VITE_API_URL should be set to the Render backend URL (e.g., https://your-app.onrender.com).
  * When empty, API calls will be skipped and components will use local state only.
- */
 const BASE_URL = import.meta.env.VITE_API_URL || '';
+
+let currentToken = localStorage.getItem('token') || null;
 
 /**
  * request
@@ -47,6 +48,11 @@ async function request(endpoint, options = {}) {
     ...options,
   };
 
+  /* Attach JWT token if available */
+  if (currentToken) {
+    config.headers['Authorization'] = `Bearer ${currentToken}`;
+  }
+
   /* If the body is an object, serialize it to JSON */
   if (config.body && typeof config.body === 'object') {
     config.body = JSON.stringify(config.body);
@@ -72,6 +78,36 @@ async function request(endpoint, options = {}) {
 // ---------------------------------------------------------------------------
 
 const api = {
+  /**
+   * setToken
+   * Updates the API service's internal token state.
+   */
+  setToken: (token) => {
+    currentToken = token;
+  },
+
+  /**
+   * login
+   * Authenticates a user and returns their token and profile.
+   */
+  login: (credentials) => {
+    return request('/api/auth/login', {
+      method: 'POST',
+      body: credentials,
+    });
+  },
+
+  /**
+   * register
+   * Creates a new user account.
+   */
+  register: (credentials) => {
+    return request('/api/auth/register', {
+      method: 'POST',
+      body: credentials,
+    });
+  },
+
   /**
    * getPosts
    * Fetches the global feed of posts, sorted newest first.
