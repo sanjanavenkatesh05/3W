@@ -72,6 +72,14 @@ function App() {
     setUser(newUser);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    api.setToken(null);
+    setToken(null);
+    setUser(null);
+  };
+
   /* -- Posts State --
    * Stores the array of post objects currently displayed in the feed.
    * Initialized empty; populated by API response or sample data on mount.
