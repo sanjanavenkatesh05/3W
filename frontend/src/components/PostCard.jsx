@@ -272,6 +272,11 @@ function PostCard({ post, currentUser }) {
           {renderContentWithHashtags(post.content, post.hashtags)}
         </Typography>
 
+        {/* ---- Image Grid Section ---- */}
+        {post.images && post.images.length > 0 && (
+          <ImageGrid images={post.images} />
+        )}
+
         {/* ---- Action Bar Section ---- */}
         <Box
           sx={{
