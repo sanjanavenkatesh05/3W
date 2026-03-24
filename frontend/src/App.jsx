@@ -55,7 +55,13 @@ function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem('user');
-    return saved ? JSON.parse(saved) : null;
+    if (!saved || saved === 'undefined') return null;
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse user from localStorage', e);
+      return null;
+    }
   });
 
   const handleLogin = (newToken, newUser) => {
@@ -155,7 +161,7 @@ function App() {
         second: '2-digit',
         hour12: true,
       }),
-      avatarColor: generateAvatarColor(user ? user.username : 'You'),
+      avatarColor: color,
       content: postData.content,
       /* Extract hashtags from the content for styled rendering */
       hashtags: postData.content.match(/#\w+/g) || [],
