@@ -17,10 +17,16 @@
  * - If the API is not configured (VITE_API_URL is empty), falls back
  *   to local sample data so the UI still works during development.
  * - New posts are sent to the API if available, then prepended locally.
+ *
+ * Theme management:
+ * - Dark mode state is managed here and passed to SearchBar's toggle button.
+ * - ThemeProvider wraps the entire tree so all MUI components respond to mode changes.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Box, CircularProgress } from '@mui/material';
+import { ThemeProvider } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
 import TopBar from './components/TopBar';
 import SearchBar from './components/SearchBar';
 import CreatePost from './components/CreatePost';
@@ -30,8 +36,20 @@ import FloatingActionButton from './components/FloatingActionButton';
 import BottomNav from './components/BottomNav';
 import samplePosts from './data/samplePosts';
 import api from './services/api';
+import createAppTheme from './theme';
 
 function App() {
+  /* -- Dark Mode State --
+   * Controls the theme mode. Toggled by the moon/sun button in SearchBar.
+   */
+  const [darkMode, setDarkMode] = useState(false);
+
+  /* Memoize the theme object so it only rebuilds when darkMode changes */
+  const theme = useMemo(
+    () => createAppTheme(darkMode ? 'dark' : 'light'),
+    [darkMode]
+  );
+
   /* -- Posts State --
    * Stores the array of post objects currently displayed in the feed.
    * Initialized empty; populated by API response or sample data on mount.
@@ -127,53 +145,59 @@ function App() {
   };
 
   return (
-    <Box
-      sx={{
-        /* Container constrained to mobile width, centered on desktop */
-        maxWidth: 480,
-        mx: 'auto',
-        minHeight: '100vh',
-        backgroundColor: 'background.default',
-        position: 'relative',
-      }}
-    >
-      {/* -- Fixed Top Bar -- */}
-      <TopBar />
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <Box
+        sx={{
+          /* Container constrained to mobile width, centered on desktop */
+          maxWidth: 480,
+          mx: 'auto',
+          minHeight: '100vh',
+          backgroundColor: 'background.default',
+          position: 'relative',
+        }}
+      >
+        {/* -- Fixed Top Bar -- */}
+        <TopBar />
 
-      {/* -- Scrollable Content Area --
-       * Padded top and bottom to account for fixed TopBar (56px)
-       * and BottomNav (56px) heights.
-       */}
-      <Box sx={{ pt: '64px', pb: '72px' }}>
-        {/* Search input and action icons */}
-        <SearchBar />
-
-        {/* Post creation card with text + image upload */}
-        <CreatePost onCreatePost={handleCreatePost} />
-
-        {/* Feed filter chips */}
-        <FilterTabs />
-
-        {/* -- Post Feed --
-         * Shows a loading spinner while fetching from API.
-         * Once loaded, renders each post as a PostCard.
-         * Posts are keyed by their unique id (or _id from MongoDB).
+        {/* -- Scrollable Content Area --
+         * Padded top and bottom to account for fixed TopBar (56px)
+         * and BottomNav (56px) heights.
          */}
-        {loading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
-            <CircularProgress size={32} />
-          </Box>
-        ) : (
-          posts.map((post) => (
-            <PostCard key={post.id || post._id} post={post} />
-          ))
-        )}
-      </Box>
+        <Box sx={{ pt: '64px', pb: '72px' }}>
+          {/* Search input with dark mode toggle */}
+          <SearchBar
+            darkMode={darkMode}
+            onToggleDarkMode={() => setDarkMode((prev) => !prev)}
+          />
 
-      {/* -- Fixed UI Elements -- */}
-      <FloatingActionButton />
-      <BottomNav />
-    </Box>
+          {/* Post creation card with text + image upload */}
+          <CreatePost onCreatePost={handleCreatePost} />
+
+          {/* Feed filter chips */}
+          <FilterTabs />
+
+          {/* -- Post Feed --
+           * Shows a loading spinner while fetching from API.
+           * Once loaded, renders each post as a PostCard.
+           * Posts are keyed by their unique id (or _id from MongoDB).
+           */}
+          {loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress size={32} />
+            </Box>
+          ) : (
+            posts.map((post) => (
+              <PostCard key={post.id || post._id} post={post} />
+            ))
+          )}
+        </Box>
+
+        {/* -- Fixed UI Elements -- */}
+        <FloatingActionButton />
+        <BottomNav />
+      </Box>
+    </ThemeProvider>
   );
 }
 

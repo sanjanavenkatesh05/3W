@@ -1,15 +1,16 @@
 /**
  * SearchBar.jsx
  * --------------
- * Search input component with complementary action icons.
+ * Search input component with dark mode toggle and user avatar.
  *
  * Layout:
  * - Text input with placeholder and embedded search icon
- * - Dark mode toggle button (visual only, functionality TBD)
+ * - Dark mode toggle button: moon icon in light mode, sun icon in dark mode
  * - Small user avatar on the right
  *
- * The search field uses MUI's OutlinedInput with custom rounded styling
- * to maintain the minimalistic design language.
+ * Props:
+ * - darkMode: boolean indicating the current theme mode
+ * - onToggleDarkMode: callback to switch between light and dark themes
  */
 
 import React from 'react';
@@ -22,8 +23,9 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
 
-function SearchBar() {
+function SearchBar({ darkMode, onToggleDarkMode }) {
   return (
     <Box
       sx={{
@@ -36,7 +38,7 @@ function SearchBar() {
     >
       {/* -- Search Input Field --
        * Rounded outline input with a search icon button inside.
-       * Flex-grows to fill available horizontal space.
+       * Background adapts to theme via 'background.paper'.
        */}
       <OutlinedInput
         placeholder="Search promotions, users..."
@@ -60,30 +62,39 @@ function SearchBar() {
         }
         sx={{
           borderRadius: 3,
-          backgroundColor: '#fff',
+          backgroundColor: 'background.paper',
           fontSize: '0.85rem',
           '& .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#e5e7eb',
+            borderColor: 'divider',
           },
           '&:hover .MuiOutlinedInput-notchedOutline': {
-            borderColor: '#d1d5db',
+            borderColor: 'divider',
           },
           pr: 0.5,
         }}
       />
 
-      {/* Dark mode toggle (placeholder functionality) */}
+      {/* Dark/Light mode toggle button.
+       * Shows moon icon in light mode, sun icon in dark mode.
+       * Calls onToggleDarkMode to switch themes.
+       */}
       <IconButton
         size="small"
+        onClick={onToggleDarkMode}
         sx={{
           color: 'text.secondary',
-          border: '1px solid #e5e7eb',
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: 2,
           width: 36,
           height: 36,
         }}
       >
-        <DarkModeOutlinedIcon sx={{ fontSize: 20 }} />
+        {darkMode ? (
+          <LightModeOutlinedIcon sx={{ fontSize: 20 }} />
+        ) : (
+          <DarkModeOutlinedIcon sx={{ fontSize: 20 }} />
+        )}
       </IconButton>
 
       {/* Secondary user avatar */}

@@ -31,9 +31,6 @@ import {
   Alert,
 } from '@mui/material';
 import CameraAltOutlinedIcon from '@mui/icons-material/CameraAltOutlined';
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
-import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted';
-import CampaignOutlinedIcon from '@mui/icons-material/CampaignOutlined';
 import SendIcon from '@mui/icons-material/Send';
 import CloseIcon from '@mui/icons-material/Close';
 
@@ -280,27 +277,6 @@ function CreatePost({ onCreatePost }) {
               hidden
               onChange={handleImageSelect}
             />
-
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
-              <EmojiEmotionsOutlinedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-            <IconButton size="small" sx={{ color: 'text.secondary' }}>
-              <FormatListBulletedIcon sx={{ fontSize: 20 }} />
-            </IconButton>
-
-            {/* Promote button */}
-            <Button
-              size="small"
-              startIcon={<CampaignOutlinedIcon sx={{ fontSize: 18 }} />}
-              sx={{
-                fontSize: '0.75rem',
-                color: 'primary.main',
-                textTransform: 'none',
-                ml: 0.5,
-              }}
-            >
-              Promote
-            </Button>
           </Box>
 
           {/* Right side: Post submit button */}
