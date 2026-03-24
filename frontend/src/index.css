@@ -1,0 +1,63 @@
+/**
+ * index.css
+ * ----------
+ * Global styles and resets for the Social Media application.
+ * Sets up the base typography, background, and scroll behavior.
+ * Component-specific styles are handled by Material UI's sx prop and theme.
+ */
+
+/* -- Import Inter font from Google Fonts -- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* -- CSS Reset and Base Styles -- */
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  /* Smooth scrolling for anchor links and programmatic scrolls */
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: 'Inter', 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  background-color: #f0f2f5;
+  color: #1a1a2e;
+  /* Prevent horizontal overflow on mobile */
+  overflow-x: hidden;
+  min-height: 100vh;
+}
+
+/* -- Scrollbar Styling (Webkit) --
+ * Thin, subtle scrollbar that does not distract from content.
+ */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #c4c4c4;
+  border-radius: 3px;
+}
+
+/* -- Link Resets -- */
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+/* -- Image Resets -- */
+img {
+  max-width: 100%;
+  display: block;
+}
