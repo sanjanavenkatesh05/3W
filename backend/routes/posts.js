@@ -69,6 +69,7 @@ router.get('/', async (req, res) => {
       hashtags: post.content.match(/#\w+/g) || [],
       images: post.images || [],
       likes: post.like_count,
+      liked_by: post.liked_by || [],
       comments: post.comments.length,
       commentsList: post.comments,
       shares: post.share_count,
