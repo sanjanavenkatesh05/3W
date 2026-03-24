@@ -149,9 +149,9 @@ router.post('/', requireAuth, async (req, res) => {
 // ---------------------------------------------------------------------------
 
 /**
- * Increments the like_count of a post by 1 (Protected).
- * Ensures a user can only like a post once.
- * Uses MongoDB's $addToSet to prevent duplicate user IDs in liked_by.
+ * Toggles the like status of a post for the current user (Protected).
+ * If already liked, unlikes it ($pull, count -1).
+ * If not liked, likes it ($addToSet, count +1).
  *
  * Response: Updated post object.
  */
@@ -160,13 +160,18 @@ router.patch('/:id/like', requireAuth, async (req, res) => {
     const postToLike = await Post.findById(req.params.id);
     if (!postToLike) return res.status(404).json({ message: 'Post not found' });
 
-    if (postToLike.liked_by.includes(req.user.id)) {
-      return res.status(400).json({ message: 'You have already liked this post' });
+    const isLiked = postToLike.liked_by.includes(req.user.id);
+
+    let updateQuery;
+    if (isLiked) {
+      updateQuery = { $pull: { liked_by: req.user.id }, $inc: { like_count: -1 } };
+    } else {
+      updateQuery = { $addToSet: { liked_by: req.user.id }, $inc: { like_count: 1 } };
     }
 
     const post = await Post.findByIdAndUpdate(
       req.params.id,
-      { $addToSet: { liked_by: req.user.id }, $inc: { like_count: 1 } },
+      updateQuery,
       { new: true }
     );
 

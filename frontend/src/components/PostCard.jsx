@@ -90,26 +90,30 @@ function PostCard({ post, currentUser }) {
 
   /**
    * handleLike
-   * Optimistically increments the like count and calls the backend.
+   * Optimistically toggles the like count and calls the backend.
    */
   const handleLike = async () => {
-    if (isLiked || isLiking) return; // Prevent multiple likes in one session or spamming clicks
+    if (isLiking) return; // Prevent spamming clicks while network request is pending
 
+    const wasLiked = isLiked;
     setIsLiking(true);
-    setLikes((prev) => prev + 1);
-    setIsLiked(true);
+
+    // Optimistic UI update
+    setLikes((prev) => (wasLiked ? prev - 1 : prev + 1));
+    setIsLiked(!wasLiked);
 
     try {
       /* id might be id or _id depending on sample vs real data */
       const postId = post._id || post.id;
       if (typeof postId === 'string') {
+        // The same endpoint toggles the status on the backend
         await api.likePost(postId);
       }
     } catch (error) {
-      console.error('Failed to like post:', error);
+      console.error('Failed to toggle like on post:', error);
       // Revert optimism on failure
-      setLikes((prev) => prev - 1);
-      setIsLiked(false);
+      setLikes((prev) => (wasLiked ? prev + 1 : prev - 1));
+      setIsLiked(wasLiked);
     } finally {
       setIsLiking(false);
     }
@@ -284,7 +288,7 @@ function PostCard({ post, currentUser }) {
             <IconButton 
               size="small" 
               onClick={handleLike} 
-              disabled={isLiked || isLiking}
+              disabled={isLiking}
               sx={{ color: isLiked ? 'error.main' : 'text.secondary' }}
             >
               {isLiked ? <FavoriteIcon sx={{ fontSize: 20 }} /> : <FavoriteBorderIcon sx={{ fontSize: 20 }} />}
