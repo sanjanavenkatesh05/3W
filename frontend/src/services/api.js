@@ -18,6 +18,7 @@
  * Vite injects environment variables at build time via import.meta.env.
  * VITE_API_URL should be set to the Render backend URL (e.g., https://your-app.onrender.com).
  * When empty, API calls will be skipped and components will use local state only.
+ */
 const BASE_URL = import.meta.env.VITE_API_URL || '';
 
 let currentToken = localStorage.getItem('token') || null;
